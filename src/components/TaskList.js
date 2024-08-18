@@ -1,32 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import axios from 'axios';
 import { Box, VStack, Text, Button, HStack, Badge } from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const api = axios.create({
   baseURL: 'https://task-management-app-3dm2knbv.devinapps.com/api'
 });
 
-const TaskList = () => {
-  const [tasks, setTasks] = useState([]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  const fetchTasks = async () => {
-    try {
-      const response = await api.get('/tasks');
-      setTasks(response.data);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
-    }
-  };
-
+const TaskList = ({ tasks, onTaskComplete, onTaskUpdated }) => {
   const deleteTask = async (id) => {
     try {
       await api.delete(`/tasks/${id}`);
-      setTasks(tasks.filter(task => task._id !== id));
+      onTaskUpdated();
     } catch (error) {
       console.error('Error deleting task:', error);
     }
@@ -34,17 +19,12 @@ const TaskList = () => {
 
   const updateTaskStatus = async (id, newStatus) => {
     try {
-      const response = await api.put(`/tasks/${id}`, { status: newStatus });
-      setTasks(tasks.map(task =>
-        task._id === id ? { ...response.data, isAnimating: true } : task
-      ));
+      await api.put(`/tasks/${id}`, { status: newStatus });
+      onTaskUpdated();
 
-      // Reset the animation flag after a short delay
-      setTimeout(() => {
-        setTasks(tasks => tasks.map(task =>
-          task._id === id ? { ...task, isAnimating: false } : task
-        ));
-      }, 500); // Adjust this value to match your animation duration
+      if (newStatus === 'completed') {
+        onTaskComplete();
+      }
     } catch (error) {
       console.error('Error updating task status:', error);
     }
